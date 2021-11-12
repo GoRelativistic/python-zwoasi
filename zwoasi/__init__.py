@@ -597,7 +597,10 @@ class Camera(object):
 
     def capture(self, initial_sleep=0.01, poll=0.01, buffer_=None,
                 filename=None):
-        """Capture a still image. Type :class:`numpy.ndarray`."""
+        """Capture a still image. Type :class:`numpy.ndarray`.
+        
+        Files can be saved as a ".FIT or .FITS" file if included within the ``filename``,
+        however the image type must be set to ``ASI_IMG_RAW16`` with set_image_type (image_type). """
         self.start_exposure()
         if initial_sleep:
             time.sleep(initial_sleep)
@@ -623,8 +626,16 @@ class Camera(object):
         else:
             raise ValueError('Unsupported image type')
         img = img.reshape(shape)
-
+        
         if filename is not None:
+            if str(filename).lower().__contains__('.fit'):
+                if whbi[3] is not ASI_IMG_RAW16:
+                    raise ValueError("Saving a FITS file requires image type to be set as ``ASI_IMG_RAW16``")
+                from astropy.io import fits
+                final = fits.PrimaryHDU(data=img)
+                final.writeto(filename)
+                logger.debug('wrote %s', filename)
+                
             from PIL import Image
             mode = None
             if len(img.shape) == 3:
